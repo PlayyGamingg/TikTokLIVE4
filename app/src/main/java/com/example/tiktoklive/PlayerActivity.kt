@@ -87,7 +87,7 @@ class PlayerActivity : Activity() {
           var sh='-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000,-1px -1px #000,1px -1px #000,-1px 1px #000,1px 1px #000';
           var st=document.getElementById('__tv_css');
           if(!st){ st=document.createElement('style'); st.id='__tv_css'; document.head.appendChild(st); }
-          var cssText=
+          st.textContent=
             'html,body{overflow:hidden !important;background:transparent !important}'+
             '*{color:#fff !important;text-shadow:'+sh+' !important;box-shadow:none !important;-webkit-mask-image:none !important;mask-image:none !important;backdrop-filter:none !important}'+
             '*::before,*::after{background:none !important;box-shadow:none !important;-webkit-mask-image:none !important;mask-image:none !important}'+
@@ -97,10 +97,7 @@ class PlayerActivity : Activity() {
             'video,canvas{visibility:hidden !important}'+
             'input,textarea,[contenteditable="true"],[data-e2e*="chat-input"],[data-e2e*="comment-input"],[class*="InputContainer"],[class*="ChatFooter"]{display:none !important}'+
             '[class*="TopFan"],[class*="RankList"],[class*="Leaderboard"],[data-e2e*="top-user"]{display:none !important}'+
-            '[class*="SideNav"],[class*="DivSideNav"],[data-e2e*="side-nav"],[class*="DivHeaderContainer"],[class*="HeaderContainer"],[id="app-header"]{display:none !important}'+
-            '[data-tv-scroll="1"]{scale:1 -1 !important}'+
-            '[data-tv-list="1"]>*{scale:1 -1 !important}';
-          if(st.__css!==cssText){ st.textContent=cssText; st.__css=cssText; }
+            '[class*="SideNav"],[class*="DivSideNav"],[data-e2e*="side-nav"],[class*="DivHeaderContainer"],[class*="HeaderContainer"],[id="app-header"]{display:none !important}';
 
           document.querySelectorAll('video').forEach(function(v){ try{ v.pause(); v.muted=true; v.removeAttribute('src'); v.load(); }catch(e){} });
 
@@ -135,24 +132,23 @@ class PlayerActivity : Activity() {
               });
               if(!sched){
                 sched=true;
-                setTimeout(function(){ sched=false; var arr=Array.from(window.__tvQ); window.__tvQ.clear(); arr.forEach(proc); },100);
+                setTimeout(function(){ sched=false; var arr=Array.from(window.__tvQ); window.__tvQ.clear(); arr.forEach(proc); },40);
               }
             });
             window.__tvObs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
           }
           window.__tvN=(window.__tvN||0)+1;
-          if(window.__tvN===1||window.__tvN%10===0){
+          if(window.__tvN===1||window.__tvN%5===0){
             var all=document.body.querySelectorAll('*');
             for(var j=0;j<all.length;j++) proc(all[j]);
           }
 
           // Ẩn bảng xếp hạng / top người gửi theo nội dung chữ, giữ lại dòng "Người xem"
-          if(window.__tvN<=3||window.__tvN%10===0){
           var tops=document.body.querySelectorAll('div,section,span');
           for(var t=0;t<tops.length;t++){
             var te=tops[t];
             if(te.dataset.tvTop) continue;
-            var txt=(te.textContent||'').trim();
+            var txt=(te.innerText||'').trim();
             if(!txt || txt.length>400) continue;
             if(/Người xem/i.test(txt)) continue;
             if(/(Được gửi nhiều nhất|Bảng xếp hạng|Top người|Top fan|Xếp hạng)/i.test(txt)){
@@ -164,34 +160,29 @@ class PlayerActivity : Activity() {
             }
           }
 
-          }
-
-          // Đảo thứ tự: bình luận mới nhất hiện ở trên cùng (bật / tắt từ thanh tùy chọn)
-          if(window.__tvRev===true){
-            var oldS=document.querySelector('[data-tv-scroll="1"]'), oldL=document.querySelector('[data-tv-list="1"]');
-            if(!(oldS&&oldL&&oldS.contains(oldL))){
-              if(oldS) oldS.removeAttribute('data-tv-scroll');
-              if(oldL) oldL.removeAttribute('data-tv-list');
-              var cand=document.body.querySelectorAll('div,ul,section'), best=null, bh=0;
-              for(var c=0;c<cand.length;c++){
-                var ce=cand[c], cr=ce.getBoundingClientRect();
-                if(cr.height<150||cr.width<150) continue;
-                if(cr.left<window.innerWidth*0.5||cr.width>window.innerWidth*0.45) continue;
-                var oy=getComputedStyle(ce).overflowY;
-                if((oy==='auto'||oy==='scroll'||oy==='overlay')&&ce.scrollHeight>ce.clientHeight+10&&cr.height>bh){ best=ce; bh=cr.height; }
-              }
-              if(best){
-                var lst=best, mx=best.children.length;
-                best.querySelectorAll('*').forEach(function(d){ if(d.children.length>mx){ mx=d.children.length; lst=d; } });
-                if(mx>=3){ best.setAttribute('data-tv-scroll','1'); lst.setAttribute('data-tv-list','1'); }
-              }
+          // Cắt đáy trang đúng tại mép dưới của danh sách bình luận (bỏ ô nhập, nút tim); giữ dòng số người xem ở trên
+          (function(){
+            var bottom=-1, bh=0;
+            var cand=document.body.querySelectorAll('div,ul,section');
+            for(var c=0;c<cand.length;c++){
+              var ce=cand[c], cr=ce.getBoundingClientRect();
+              if(cr.height<150||cr.width<150||cr.height>H*0.92) continue;
+              if(cr.left<window.innerWidth*0.5||cr.width>window.innerWidth*0.45) continue;
+              var oy=getComputedStyle(ce).overflowY;
+              if((oy==='auto'||oy==='scroll'||oy==='overlay') && cr.height>bh){ bh=cr.height; bottom=cr.bottom; }
             }
-          } else {
-            document.querySelectorAll('[data-tv-scroll],[data-tv-list]').forEach(function(x){ x.removeAttribute('data-tv-scroll'); x.removeAttribute('data-tv-list'); });
-          }
+            var gap=0;
+            if(bottom>0 && bottom<H-2) gap=Math.round(H-bottom);
+            if(window.__tvGapKey!==gap){
+              window.__tvGapKey=gap;
+              if(gap>0) document.documentElement.style.setProperty('clip-path','inset(0px 0px '+gap+'px 0px)','important');
+              else document.documentElement.style.removeProperty('clip-path');
+              window.__tvGapRatio=gap/H;
+            }
+          })();
 
           // Tự dò và ẩn thanh bên trái
-          if(!window.__tvSideDone && window.__tvN<=6){
+          if(!window.__tvSideDone){
             var nodes=document.body.querySelectorAll('div,nav,aside,section'), hidden=[];
             for(var i=0;i<nodes.length;i++){
               var el=nodes[i];
@@ -239,8 +230,6 @@ class PlayerActivity : Activity() {
     private lateinit var btnQ: Button
     private lateinit var btnPause: Button
     private lateinit var btnT: Button
-    private lateinit var btnOrder: Button
-    private var newestTop = true
 
     private var user = ""
     private var chatUrl = ""
@@ -295,7 +284,10 @@ class PlayerActivity : Activity() {
 
     private val tick = object : Runnable {
         override fun run() {
-            if (showComments && (web.url ?: "").startsWith("http")) applyTweak()
+            if (showComments && (web.url ?: "").startsWith("http")) {
+                web.evaluateJavascript(TWEAK_JS, null)
+                syncGap()
+            }
             handler.postDelayed(this, 2000)
         }
     }
@@ -309,7 +301,6 @@ class PlayerActivity : Activity() {
         val prefs = getSharedPreferences("cfg", MODE_PRIVATE)
         showComments = prefs.getBoolean("comments", true)
         textIdx = prefs.getInt("ts", 1).coerceIn(0, TEXT_MULT.size - 1)
-        newestTop = prefs.getBoolean("ord", true)
         user = intent.getStringExtra("user") ?: ""
         chatUrl = "https://www.tiktok.com/@$user/live"
         screenW = resources.displayMetrics.widthPixels
@@ -386,7 +377,7 @@ class PlayerActivity : Activity() {
         CookieManager.getInstance().setAcceptThirdPartyCookies(web, true)
         web.webViewClient = object : WebViewClient() {
             override fun onPageFinished(v: WebView?, url: String?) {
-                if (showComments && (url ?: "").startsWith("http")) applyTweak()
+                if (showComments && (url ?: "").startsWith("http")) web.evaluateJavascript(TWEAK_JS, null)
             }
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
                 val p = request?.url?.path ?: return null
@@ -407,16 +398,16 @@ class PlayerActivity : Activity() {
             descendantFocusability = android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
             visibility = if (showComments) View.VISIBLE else View.GONE
         }
-        chatBox.addView(web, FrameLayout.LayoutParams(screenW, chatH).apply {
+        chatBox.addView(web, FrameLayout.LayoutParams(screenW, chatH + cut).apply {
             leftMargin = -(screenW - chatW) + shiftRight
         })
 
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         root.addView(playerView, FrameLayout.LayoutParams(-1, -1))
-        root.addView(chatBox, FrameLayout.LayoutParams(chatW, chatH).apply {
+        root.addView(chatBox, FrameLayout.LayoutParams(chatW, chatH + cut).apply {
             gravity = Gravity.BOTTOM or Gravity.START
             leftMargin = 8
-            bottomMargin = 8
+            bottomMargin = 8 - cut   // ban đầu giả định phần dưới ≈ cut; sẽ tự chỉnh theo trang
         })
 
         // Lớp bắt chạm: chạm màn hình để mở / đóng thanh tùy chọn
@@ -454,14 +445,9 @@ class PlayerActivity : Activity() {
             getSharedPreferences("cfg", MODE_PRIVATE).edit().putInt("ts", textIdx).apply()
             applyTextSize()
         }
-        btnOrder = mkBtn {
-            newestTop = !newestTop
-            getSharedPreferences("cfg", MODE_PRIVATE).edit().putBoolean("ord", newestTop).apply()
-            applyTweak()
-        }
         val btnReload = mkBtn { reload() }.apply { text = "Tải lại" }
         val btnExit = mkBtn { finish() }.apply { text = "Thoát" }
-        listOf(btnCmt, btnQ, btnPause, btnT, btnOrder, btnReload, btnExit).forEach { bt ->
+        listOf(btnCmt, btnQ, btnPause, btnT, btnReload, btnExit).forEach { bt ->
             bar.addView(bt, LinearLayout.LayoutParams(-2, -2).apply { marginStart = 8; marginEnd = 8 })
         }
         barHolder = HorizontalScrollView(this).apply {
@@ -509,7 +495,6 @@ class PlayerActivity : Activity() {
         btnQ.text = "Độ phân giải: " + if (curRank >= 0) rankLabel(curRank) else "-"
         btnPause.text = if (player.playWhenReady) "Tạm dừng" else "Phát"
         btnT.text = "Cỡ chữ bình luận: " + TEXT_NAMES[textIdx]
-        btnOrder.text = "Bình luận mới: " + if (newestTop) "ở trên" else "ở dưới"
     }
 
     private fun showMsg(t: String, ms: Long) {
@@ -539,8 +524,20 @@ class PlayerActivity : Activity() {
     }
 
     /** Cỡ chữ mặc định ≈ 1,9% chiều cao màn hình (giống ảnh minh họa), nhân theo mức Nhỏ/Vừa/To/Rất to. */
-    private fun applyTweak() {
-        web.evaluateJavascript("window.__tvRev=" + newestTop + ";" + TWEAK_JS, null)
+    /** Đọc từ trang: phần đáy (ô nhập, nút tim) cao bao nhiêu, rồi dịch khung xuống để mép dưới danh sách chạm đáy video. */
+    private fun syncGap() {
+        web.evaluateJavascript("(window.__tvGapRatio===undefined?-1:window.__tvGapRatio)") { v ->
+            val r = v?.toFloatOrNull()
+            if (r != null && r >= 0f) {
+                val gap = (r * web.layoutParams.height).toInt()
+                val lp = chatBox.layoutParams as FrameLayout.LayoutParams
+                val target = 8 - gap
+                if (kotlin.math.abs(lp.bottomMargin - target) > 4) {
+                    lp.bottomMargin = target
+                    chatBox.layoutParams = lp
+                }
+            }
+        }
     }
 
     private fun applyTextSize() {
