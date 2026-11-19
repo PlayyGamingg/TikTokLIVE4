@@ -366,7 +366,7 @@ class PlayerActivity : Activity() {
         }
 
         val chatW = (screenW * 0.35f).toInt()
-        val chatH = (screenH * 0.80f).toInt()
+        val chatH = (screenH * 0.58f).toInt()
         val cut = (screenH * 0.13f).toInt()   // phần dưới (ô nhập bình luận) bị cắt bỏ
         val shiftRight = 0  // không dời nữa: mở rộng khung để hiện trọn cột chat
         chatBox = FrameLayout(this).apply {

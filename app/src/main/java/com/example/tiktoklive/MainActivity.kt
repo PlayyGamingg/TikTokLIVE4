@@ -21,7 +21,7 @@ import android.widget.Toast
 class MainActivity : Activity() {
     companion object {
         /** Tạm tắt mục đăng nhập bằng mã QR. Đổi thành true để bật lại. */
-        const val SHOW_LOGIN = true
+        const val SHOW_LOGIN = false
     }
     private lateinit var prefs: SharedPreferences
     private lateinit var input: EditText
