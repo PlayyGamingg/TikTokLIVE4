@@ -92,6 +92,7 @@ class PlayerActivity : Activity() {
             '*{color:#fff !important;text-shadow:'+sh+' !important;box-shadow:none !important;-webkit-mask-image:none !important;mask-image:none !important;backdrop-filter:none !important}'+
             '*::before,*::after{background:none !important;box-shadow:none !important;-webkit-mask-image:none !important;mask-image:none !important}'+
             '*:focus,*:focus-visible,*:active{outline:none !important;box-shadow:none !important}'+
+            '*{transition:none !important;animation:none !important;scroll-behavior:auto !important}'+
             '*::-webkit-scrollbar{display:none !important}'+
             'video,canvas{visibility:hidden !important}'+
             'input,textarea,[contenteditable="true"],[data-e2e*="chat-input"],[data-e2e*="comment-input"],[class*="InputContainer"],[class*="ChatFooter"]{display:none !important}'+
@@ -131,7 +132,7 @@ class PlayerActivity : Activity() {
               });
               if(!sched){
                 sched=true;
-                setTimeout(function(){ sched=false; var arr=Array.from(window.__tvQ); window.__tvQ.clear(); arr.forEach(proc); },300);
+                setTimeout(function(){ sched=false; var arr=Array.from(window.__tvQ); window.__tvQ.clear(); arr.forEach(proc); },40);
               }
             });
             window.__tvObs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
@@ -365,7 +366,7 @@ class PlayerActivity : Activity() {
         }
 
         val chatW = (screenW * 0.35f).toInt()
-        val chatH = (screenH * 0.58f).toInt()
+        val chatH = (screenH * 0.80f).toInt()
         val cut = (screenH * 0.13f).toInt()   // phần dưới (ô nhập bình luận) bị cắt bỏ
         val shiftRight = 0  // không dời nữa: mở rộng khung để hiện trọn cột chat
         chatBox = FrameLayout(this).apply {
