@@ -21,7 +21,10 @@ import android.widget.Toast
 class MainActivity : Activity() {
     companion object {
         /** Tạm tắt mục đăng nhập bằng mã QR. Đổi thành true để bật lại. */
-        const val SHOW_LOGIN = false
+        const val SHOW_LOGIN = true
+
+        /** Ẩn công tắc "Hiện bình luận" dưới ô nhập ID. Đổi thành true để hiện lại. */
+        const val SHOW_COMMENT_SWITCH = false
     }
     private lateinit var prefs: SharedPreferences
     private lateinit var input: EditText
@@ -67,6 +70,7 @@ class MainActivity : Activity() {
             isChecked = prefs.getBoolean("comments", true)
         }
         add(sw)
+        if (!SHOW_COMMENT_SWITCH) sw.visibility = View.GONE
 
         add(Ui.mkButton(this, 22f).apply {
             text = "Xem LIVE"

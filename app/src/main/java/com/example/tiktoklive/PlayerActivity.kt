@@ -172,7 +172,7 @@ class PlayerActivity : Activity() {
               if((oy==='auto'||oy==='scroll'||oy==='overlay') && cr.height>bh){ bh=cr.height; bottom=cr.bottom; }
             }
             var gap=0;
-            if(bottom>0 && bottom<H-2) gap=Math.round(H-bottom);
+            if(bottom>0 && bottom<H-2) gap=Math.max(0,Math.round(H-bottom-4));
             if(window.__tvGapKey!==gap){
               window.__tvGapKey=gap;
               if(gap>0) document.documentElement.style.setProperty('clip-path','inset(0px 0px '+gap+'px 0px)','important');
@@ -236,7 +236,7 @@ class PlayerActivity : Activity() {
     private var screenW = 0
     private var screenH = 0
     private var chatH = 0     // chiều cao phần bình luận hiển thị (50% màn hình)
-    private var lift = 0      // nâng khung lên một chút để dòng cuối không bị cắt
+    private var lift = 0      // khoảng đen dưới ảnh video; đáy lớp bình luận sẽ sát mép dưới ảnh video
     private var showComments = true
     private var textIdx = 1
     private var barVisible = false
@@ -338,6 +338,7 @@ class PlayerActivity : Activity() {
             }
             override fun onVideoSizeChanged(v: VideoSize) {
                 if (v.width > 0 && v.height > 0 && curRank >= 0) {
+                    updateVideoInset(v)
                     measuredP[curRank] = minOf(v.width, v.height)
                     updateButtons()
                     startFpsProbe()
@@ -394,7 +395,7 @@ class PlayerActivity : Activity() {
         val chatW = (screenW * 0.35f).toInt()
         chatH = (screenH * 0.50f).toInt()   // 50% chiều cao màn hình
         val cut = (screenH * 0.13f).toInt()   // ước lượng ban đầu của phần dưới (ô nhập); sẽ tự đo lại
-        lift = (screenH * 0.04f).toInt()
+        lift = 0   // tự tính lại khi biết kích thước video
         val shiftRight = 0  // không dời nữa: mở rộng khung để hiện trọn cột chat
         chatBox = FrameLayout(this).apply {
             clipChildren = true
@@ -528,6 +529,16 @@ class PlayerActivity : Activity() {
 
     /** Cỡ chữ mặc định ≈ 1,9% chiều cao màn hình (giống ảnh minh họa), nhân theo mức Nhỏ/Vừa/To/Rất to. */
     /** Đọc từ trang: phần đáy (ô nhập, nút tim) cao bao nhiêu, rồi dịch khung xuống để mép dưới danh sách chạm đáy video. */
+    /** Khoảng đen bên dưới ảnh video (khi video không phủ kín màn hình), để đáy lớp bình luận sát mép dưới ảnh video. */
+    private fun updateVideoInset(v: VideoSize) {
+        val pw = if (playerView.width > 0) playerView.width else screenW
+        val ph = if (playerView.height > 0) playerView.height else screenH
+        val ratio = if (v.pixelWidthHeightRatio > 0f) v.pixelWidthHeightRatio else 1f
+        val aspect = (v.width * ratio) / v.height
+        val dispH = if (pw / aspect <= ph) pw / aspect else ph.toFloat()
+        lift = ((ph - dispH) / 2f).toInt().coerceAtLeast(0)
+    }
+
     private fun syncGap() {
         web.evaluateJavascript("(window.__tvGapRatio===undefined?-1:window.__tvGapRatio)") { v ->
             val r = v?.toFloatOrNull()
