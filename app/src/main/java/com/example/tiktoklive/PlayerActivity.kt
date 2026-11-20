@@ -235,6 +235,8 @@ class PlayerActivity : Activity() {
     private var chatUrl = ""
     private var screenW = 0
     private var screenH = 0
+    private var chatH = 0     // chiều cao phần bình luận hiển thị (50% màn hình)
+    private var lift = 0      // nâng khung lên một chút để dòng cuối không bị cắt
     private var showComments = true
     private var textIdx = 1
     private var barVisible = false
@@ -390,8 +392,9 @@ class PlayerActivity : Activity() {
         }
 
         val chatW = (screenW * 0.35f).toInt()
-        val chatH = (screenH * 0.58f).toInt()
-        val cut = (screenH * 0.13f).toInt()   // phần dưới (ô nhập bình luận) bị cắt bỏ
+        chatH = (screenH * 0.50f).toInt()   // 50% chiều cao màn hình
+        val cut = (screenH * 0.13f).toInt()   // ước lượng ban đầu của phần dưới (ô nhập); sẽ tự đo lại
+        lift = (screenH * 0.04f).toInt()
         val shiftRight = 0  // không dời nữa: mở rộng khung để hiện trọn cột chat
         chatBox = FrameLayout(this).apply {
             clipChildren = true
@@ -407,7 +410,7 @@ class PlayerActivity : Activity() {
         root.addView(chatBox, FrameLayout.LayoutParams(chatW, chatH + cut).apply {
             gravity = Gravity.BOTTOM or Gravity.START
             leftMargin = 8
-            bottomMargin = 8 - cut   // ban đầu giả định phần dưới ≈ cut; sẽ tự chỉnh theo trang
+            bottomMargin = lift - cut   // ban đầu giả định phần dưới ≈ cut; sẽ tự chỉnh theo trang
         })
 
         // Lớp bắt chạm: chạm màn hình để mở / đóng thanh tùy chọn
@@ -529,11 +532,16 @@ class PlayerActivity : Activity() {
         web.evaluateJavascript("(window.__tvGapRatio===undefined?-1:window.__tvGapRatio)") { v ->
             val r = v?.toFloatOrNull()
             if (r != null && r >= 0f) {
-                val gap = (r * web.layoutParams.height).toInt()
+                val wlp = web.layoutParams as FrameLayout.LayoutParams
+                val gap = (r * wlp.height).toInt()          // chiều cao phần dưới danh sách (ô nhập, nút tim)
+                val wantH = chatH + gap                      // phần hiển thị luôn bằng chatH (50% màn hình)
+                val wantMargin = lift - gap
                 val lp = chatBox.layoutParams as FrameLayout.LayoutParams
-                val target = 8 - gap
-                if (kotlin.math.abs(lp.bottomMargin - target) > 4) {
-                    lp.bottomMargin = target
+                if (kotlin.math.abs(wlp.height - wantH) > 4 || kotlin.math.abs(lp.bottomMargin - wantMargin) > 4) {
+                    wlp.height = wantH
+                    web.layoutParams = wlp
+                    lp.height = wantH
+                    lp.bottomMargin = wantMargin
                     chatBox.layoutParams = lp
                 }
             }
